@@ -1,7 +1,7 @@
 from flask import Flask, render_template
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from database import db
-from models import #update models in models
+from models import Service, Professional, Customer, ServiceRequest, Review
 
 app = Flask(__name__)
 
@@ -16,12 +16,20 @@ with app.app_context():
 
 @jwt.user_identity_loader
 def user_identity_lookup(user):
-    return user.id
+    # Return the ID and role to distinguish between Customer and Professional
+    return {"id": user.id, "role": user.__tablename__}
 
 @jwt.user_lookup_loader
 def user_lookup_callback(_jwt_header, jwt_data):
     identity = jwt_data["sub"]
-    return User.query.filter_by(id=identity).first()
+    user_id = identity["id"]
+    role = identity["role"]
+
+    if role == "customer":
+        return Customer.query.filter_by(id=user_id).first()
+    elif role == "professional":
+        return Professional.query.filter_by(id=user_id).first()
+    return None
 
 @app.route('/')
 def hw():
