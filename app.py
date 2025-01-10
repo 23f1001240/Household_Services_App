@@ -10,6 +10,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///project.sqlite3'
 jwt = JWTManager(app)
 
 db.init_app(app)
+app.app_context().push()
 with app.app_context():
     db.create_all()
 

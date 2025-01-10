@@ -16,6 +16,7 @@ class Professional(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, nullable=False)
     address = db.Column(db.String, nullable=False)
+    pincode = db.Column(db.String, nullable=False)
     date_created = db.Column(db.DateTime, nullable=False)
     description = db.Column(db.String(1000))
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=False)
@@ -34,6 +35,7 @@ class Customer(db.Model):
     email = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
     address = db.Column(db.String, nullable=False)
+    pincode = db.Column(db.String, nullable=False)
     date_joined = db.Column(db.DateTime, nullable=False)
 
     reviews = db.relationship('Review', backref='customer', lazy=True)
