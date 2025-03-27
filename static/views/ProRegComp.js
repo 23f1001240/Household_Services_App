@@ -4,7 +4,6 @@ const ProRegComp = Vue.component('ProRegComp', {
       <div class="card bg-light" style="width: 26rem;">
         <div class="card-body">
           <div class="d-flex justify-content-end">
-            <!-- Cross button to close the card -->
             <button type="button" class="btn-close" aria-label="Close" @click="closeCard"></button>
           </div>
           <h5 class="card-title">Service Professional Signup</h5>
@@ -26,13 +25,11 @@ const ProRegComp = Vue.component('ProRegComp', {
             </div>
             <div class="mb-3">
               <label class="form-label">Service Name</label>
-              <select class="form-control" v-model="serviceName" required>
+              <select class="form-control" v-model="service_id" required>
                 <option value="" disabled>Select Service</option>
-                <option value="carpentry">Carpentry</option>
-                <option value="cleaning">Cleaning</option>
-                <option value="electrical">Electrical</option>
-                <option value="plumbing">Plumbing</option>
-                <option value="other">Other</option>
+                <option v-for="service in services" :value="service.id" :key="service.id">
+                  {{ service.name }}
+                </option>
               </select>
             </div>
             <div class="mb-3">
@@ -40,8 +37,8 @@ const ProRegComp = Vue.component('ProRegComp', {
               <input type="number" v-model="experience" class="form-control" min="0" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">Upload Resume (PDF only)</label>
-              <input type="file" @change="handleFileUpload" accept=".pdf" class="form-control" required>
+              <label class="form-label">Upload Resume (PDF, JPG, PNG)</label>
+              <input type="file" @change="handleFileUpload" accept=".pdf, .jpg, .jpeg, .png" class="form-control" required>
             </div>
             <div class="mb-3">
               <label class="form-label">Address</label>
@@ -51,6 +48,11 @@ const ProRegComp = Vue.component('ProRegComp', {
                 <label class="form-label">Pincode</label>
                 <input type="text" v-model="pincode" class="form-control" pattern="\\d{6}" maxlength="6" required>
                 <small class="form-text text-muted">Enter a valid 6-digit pincode.</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="text" v-model="phone_number" class="form-control" pattern="\\d{10}" maxlength="10" required>
+                <small class="form-text text-muted">Enter a valid 10-digit phone number.</small>
             </div>
             <button type="submit" class="btn btn-outline-primary">Sign up</button>
           </form>
@@ -63,13 +65,27 @@ const ProRegComp = Vue.component('ProRegComp', {
       email: '',
       password: '',
       name: '',
-      serviceName: '',
+      service_id: '',
       experience: '',
       file: null,
       address: '',
       pincode: '',
-      message: ''
+      phone_number: '',
+      message: '',
+      services: []
     };
+  },
+  async created() {
+    try {
+      const response = await fetch('/api/services')
+      if (response.ok) {
+        this.services = await response.json()
+      } else {
+        console.error('Failed to fetch services')
+      }
+    } catch (error) {
+      console.error('Error fetching services:', error)
+    }
   },
   methods: {
     closeCard() {
@@ -78,41 +94,45 @@ const ProRegComp = Vue.component('ProRegComp', {
       }
     },
     handleFileUpload(event) {
-      this.file = event.target.files[0];
+      this.file = event.target.files[0]
     },
     async submitForm() {
-      const formData = new FormData();
-      formData.append('email', this.email);
-      formData.append('password', this.password);
-      formData.append('name', this.name);
-      formData.append('serviceName', this.serviceName);
-      formData.append('experience', this.experience);
-      formData.append('file', this.file);
-      formData.append('address', this.address);
-      formData.append('pincode', this.pincode);
+      const formData = new FormData()
+      formData.append('email', this.email)
+      formData.append('password', this.password)
+      formData.append('name', this.name)
+      formData.append('service_id', this.service_id)
+      formData.append('experience', this.experience)
+      formData.append('file', this.file)
+      formData.append('address', this.address)
+      formData.append('pincode', this.pincode)
+      formData.append('phone_number', this.phone_number)
 
       try {
-        const response = await fetch('http://127.0.0.1:5000/signup', {
+        const response = await fetch('/auth/proregister', {
           method: 'POST',
-          body: formData
+          body: formData,
         });
 
-        if (response.status === 201) {
-          const data = await response.json();
+        const data = await response.json();
+
+        if (response.ok) {
           alert(data.message);
           if (this.$route.path !== '/login') {
-            this.$router.push('/login');
-            this.closeCard();
+            this.$router.push('/login')
+            this.closeCard()
           }
         } else if (response.status === 409) {
-          const data = await response.json();
-          alert(data.message);
+          this.message = data.error
+        } else {
+          throw new Error(data.error || 'Something went wrong')
         }
       } catch (error) {
-        console.error(error);
+        console.error(error)
+        this.message = 'An error occurred while submitting the form.'
       }
     }
   }
-});
+})
 
-export default ProRegComp;
+export default ProRegComp

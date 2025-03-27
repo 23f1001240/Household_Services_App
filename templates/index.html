@@ -126,29 +126,31 @@
     </div>
 
     <script type="module">
+        import index from "../static/store/index.js";
         import HomeView from "../static/views/HomeView.js"
         import LoginComp from "../static/views/LoginComp.js";
         import CustRegComp from "../static/views/CustRegComp.js";
         import ProRegComp from "../static/views/ProRegComp.js";
         import AdminApp from "../static/views/AdminApp.js";
         import ProfApp from "../static/views/ProfApp.js";
-        import UserApp from "../static/views/UserApp.js";
+        import CustomerApp from "../static/views/CustomerApp.js";
 
         const routes = [
             { path: '/', component: HomeView },
             { path: '/login', component: LoginComp },
             { path: '/custregister', component: CustRegComp },
             { path: '/proregister', component: ProRegComp },
-            { path: '/admin', component: AdminApp },
-            { path: '/manager', component: ProfApp },
-            { path: '/user', component: UserApp }
+            { path: '/admin', component: AdminApp,  meta: { requiresAuth: true, requiredRole: 'admin' }},
+            { path: '/professional', component: ProfApp, meta: { requiresAuth: true, role: 'professional' }},
+            { path: '/customer', component: CustomerApp }
         ];
         const router = new VueRouter({
             routes
         })
         var app = new Vue({
             el: "#app",
-            router: router
+            router: router,
+            store: index
         })
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {

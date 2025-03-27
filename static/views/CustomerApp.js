@@ -1,23 +1,24 @@
-const AdminApp = Vue.component('AdminApp', {
+const CustomerApp = Vue.component('CustomerApp', {
     template: `
       <div v-if="isAuthenticated">
         <nav class="navbar navbar-dark bg-dark">
           <div class="container-fluid">
-            <span class="navbar-brand">Admin Dashboard</span>
+            <span class="navbar-brand">Customer Dashboard</span>
             <button class="btn btn-outline-warning" @click="logout">Logout</button>
           </div>
         </nav>
         
         <div class="container mt-4">
           <h1>Welcome, {{ userName }}!</h1>
-          <p class="lead">You have administrator privileges</p>
+          <p class="lead">Customer Dashboard</p>
           
-          <!-- Admin-only content goes here -->
+          <!-- Customer-only content goes here -->
           <div class="card mt-4">
             <div class="card-body">
-              <h3>Admin Controls</h3>
-              <button class="btn btn-primary me-2">Manage Users</button>
-              <button class="btn btn-success">View Reports</button>
+              <h3>Customer Controls</h3>
+              <button class="btn btn-primary me-2">Book Services</button>
+              <button class="btn btn-success">My Appointments</button>
+              <button class="btn btn-info">Payment History</button>
             </div>
           </div>
         </div>
@@ -36,26 +37,37 @@ const AdminApp = Vue.component('AdminApp', {
     `,
     computed: {
       isAuthenticated() {
-        return this.$store.getters.isAuthenticated && this.$store.getters.currentUser?.role === 'admin'
+        const user = this.$store.getters.currentUser
+        return this.$store.getters.isAuthenticated && 
+               user?.role === 'customer'
       },
       userName() {
-        return this.$store.getters.currentUser?.name || 'Admin'
+        return this.$store.getters.currentUser?.name || 'Customer'
       }
     },
     data() {
       return {
-        loading: true
+        loading: true,
+        authChecked: false
       };
     },
     mounted() {
       this.checkAuthStatus()
     },
     methods: {
-      checkAuthStatus() {
-        if (!this.isAuthenticated) {
+      async checkAuthStatus() {
+        try {
+          await this.$store.dispatch('checkAuth')
+          if (!this.isAuthenticated) {
+            this.$router.push('/login')
+          }
+        } catch (error) {
+          console.error("Auth check failed:", error)
           this.$router.push('/login')
+        } finally {
+          this.loading = false
+          this.authChecked = true
         }
-        this.loading = false
       },
       logout() {
         this.$store.dispatch('logout')
@@ -67,4 +79,4 @@ const AdminApp = Vue.component('AdminApp', {
     }
 })
 
-export default AdminApp
+export default CustomerApp

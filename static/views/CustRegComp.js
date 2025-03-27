@@ -59,32 +59,37 @@ const CustRegComp = Vue.component('CustRegComp', {
         this.file = event.target.files[0];
       },
       async submitForm() {
-        const formData = new FormData();
-        formData.append('email', this.email);
-        formData.append('password', this.password);
-        formData.append('name', this.name);
-        formData.append('address', this.address);
-        formData.append('pincode', this.pincode);
-  
+        const data = {
+          email: this.email,
+          password: this.password,
+          name: this.name,
+          address: this.address,
+          pincode: this.pincode
+        };
+      
         try {
-          const response = await fetch('http://127.0.0.1:5000/signup', {
+          const response = await fetch('/auth/custregister', {
             method: 'POST',
-            body: formData
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
           });
-  
-          if (response.status === 201) {
-            const data = await response.json();
-            alert(data.message);
+      
+          if (response.ok) {
+            const responseData = await response.json();
+            alert(responseData.message);
             if (this.$route.path !== '/login') {
               this.$router.push('/login');
               this.closeCard();
             }
           } else if (response.status === 409) {
-            const data = await response.json();
-            alert(data.message);
+            const responseData = await response.json();
+            alert(responseData.error);  // Use 'error' instead of 'message'
+          } else {
+            throw new Error('Something went wrong');
           }
         } catch (error) {
           console.error(error);
+          this.message = 'An error occurred while submitting the form.';
         }
       }
     }
