@@ -75,7 +75,7 @@ const LoginComp = Vue.component('LoginComp', {
         }
 
       } catch (error) {
-        console.error('Login error:', error);
+        console.error(error, 'Wrong credentials. Please try again.');
         this.message = error.message || "Login failed. Please try again.";
       } finally {
         this.loading = false;

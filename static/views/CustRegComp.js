@@ -29,6 +29,11 @@ const CustRegComp = Vue.component('CustRegComp', {
                 <textarea v-model="address" class="form-control" rows="3" required></textarea>
               </div>
               <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="text" v-model="phone_number" class="form-control" pattern="\\d{10}" maxlength="10" required>
+                <small class="form-text text-muted">Enter a valid 10-digit phone number.</small>
+              </div>
+              <div class="mb-3">
                 <label class="form-label">Pincode</label>
                 <input type="text" v-model="pincode" class="form-control" pattern="\\d{6}" maxlength="6" required>
                 <small class="form-text text-muted">Enter a valid 6-digit pincode.</small>
@@ -45,6 +50,7 @@ const CustRegComp = Vue.component('CustRegComp', {
         password: '',
         name: '',
         address: '',
+        phone_number: '',
         pincode: '',
         message: ''
       };
@@ -64,6 +70,7 @@ const CustRegComp = Vue.component('CustRegComp', {
           password: this.password,
           name: this.name,
           address: this.address,
+          phone_number: this.phone_number,
           pincode: this.pincode
         };
       
@@ -83,7 +90,7 @@ const CustRegComp = Vue.component('CustRegComp', {
             }
           } else if (response.status === 409) {
             const responseData = await response.json();
-            alert(responseData.error);  // Use 'error' instead of 'message'
+            alert(responseData.error);
           } else {
             throw new Error('Something went wrong');
           }

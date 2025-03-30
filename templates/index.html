@@ -9,12 +9,21 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" crossorigin="anonymous" />
 
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
     <!--CDN Approach for implementing Vue JS-->
     <script src="/static/Vue/vue.js"></script>
     <script src="https://unpkg.com/vue-router@2.8.1/dist/vue-router.js"></script>
     <script src="https://unpkg.com/vuex@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 
     <style>
+        .sticky-nav {
+        position: sticky;
+        top: 0;
+        z-index: 1020;
+        }
         body {
             display: flex;
             min-height: 100vh;
@@ -79,45 +88,6 @@
             align-items: center;
             padding: 20px;
         }
-        /* Style for each item */
-        .item {
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin: 10px;
-            width: 200px;
-            text-align: center;
-        }
-        /* Style for the product image */
-        .product-image {
-            max-width: 100%;
-            height: auto;
-            border-radius: 5px;
-        }
-        /* Style for the button to buy again */
-        .buy-again-btn {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            border-radius: 5px;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-        /* Style for the star rating */
-        .star-rating {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 10px;
-        }
-        .star {
-            color: #FFD700;
-            font-size: 20px;
-            margin: 0 2px;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
@@ -132,17 +102,27 @@
         import CustRegComp from "../static/views/CustRegComp.js";
         import ProRegComp from "../static/views/ProRegComp.js";
         import AdminApp from "../static/views/AdminApp.js";
+        import AdminSearch from "../static/views/AdminSearch.js";
+        import AdminSummary from "../static/views/AdminSummary.js";
         import ProfApp from "../static/views/ProfApp.js";
+        import ProfSearch from "../static/views/ProfSearch.js";
+        import ProfSummary from "../static/views/ProfSummary.js";
         import CustomerApp from "../static/views/CustomerApp.js";
+        import CustSearch from "../static/views/CustSearch.js";
 
         const routes = [
             { path: '/', component: HomeView },
             { path: '/login', component: LoginComp },
             { path: '/custregister', component: CustRegComp },
             { path: '/proregister', component: ProRegComp },
-            { path: '/admin', component: AdminApp,  meta: { requiresAuth: true, requiredRole: 'admin' }},
+            { path: '/admin', component: AdminApp,  meta: { requiresAuth: true, role: 'admin' }},
+            { path: '/admin/search', component: AdminSearch,  meta: { requiresAuth: true, role: 'admin' }},
+            { path: '/admin/summary', component: AdminSummary,  meta: { requiresAuth: true, role: 'admin' }},
             { path: '/professional', component: ProfApp, meta: { requiresAuth: true, role: 'professional' }},
-            { path: '/customer', component: CustomerApp }
+            { path: '/professional/search', component: ProfSearch, meta: { requiresAuth: true, role: 'professional' }},
+            { path: '/professional/summary', component: ProfSummary, meta: { requiresAuth: true, role: 'professional' }},
+            { path: '/customer', component: CustomerApp },
+            { path: '/customer/search', component: CustSearch,  meta: { requiresAuth: true, role: 'customer' }}
         ];
         const router = new VueRouter({
             routes

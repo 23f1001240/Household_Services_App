@@ -26,7 +26,7 @@ class Professional(db.Model):
     pincode = db.Column(db.String(6), nullable=True)
     experience = db.Column(db.String(250), nullable=False) 
     documents = db.Column(db.LargeBinary, nullable=True)
-    status=db.Column(db.Boolean(),default=False)
+    status = db.Column(db.String(20), default='Pending', nullable=False)
 
     service = db.relationship("Service", backref=db.backref("professional", lazy=True))
 
