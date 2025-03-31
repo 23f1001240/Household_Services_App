@@ -280,7 +280,7 @@ const AdminSearch = Vue.component('AdminSearch', {
         this.$router.push('/login');
       }
     },
-    async created() {
+    async mounted() {
       await this.fetchServices();
       await this.fetchCustomers();
       await this.fetchProfessionals();

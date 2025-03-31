@@ -146,32 +146,11 @@ const ProfApp = Vue.component('ProfApp', {
       </div>
     </div>
 
-     <!-- Profile Modal -->
-    <div v-if="showProfileModal" class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5)">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">My Profile</h5>
-            <button type="button" class="btn-close" @click="showProfileModal = false"></button>
-          </div>
-          <div class="modal-body">
-            <!-- Profile content goes here -->
-            <p>Profile details and editing form would appear here</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="showProfileModal = false">Close</button>
-            <button type="button" class="btn btn-primary">Save Changes</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 `,
     data() {
       return {
         loading: true,
-        showProfileModal: false,
         todaysServices: [],
         completedServices: [],
         pendingRequests: 0
@@ -243,9 +222,6 @@ const ProfApp = Vue.component('ProfApp', {
         } catch (error) {
           console.error("Error rejecting service:", error);
         }
-      },
-      viewProfile() {
-        this.showProfileModal = true;
       },
       checkAuthStatus() {
         if (!this.isAuthenticated) {

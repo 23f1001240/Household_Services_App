@@ -14,7 +14,8 @@
     <!--CDN Approach for implementing Vue JS-->
     <script src="/static/Vue/vue.js"></script>
     <script src="https://unpkg.com/vue-router@2.8.1/dist/vue-router.js"></script>
-    <script src="https://unpkg.com/vuex@2.0.0"></script>
+    <!-- <script src="https://unpkg.com/vuex@2.0.0"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vuex/2.5.0/vuex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 
@@ -109,6 +110,7 @@
         import ProfSummary from "../static/views/ProfSummary.js";
         import CustomerApp from "../static/views/CustomerApp.js";
         import CustSearch from "../static/views/CustSearch.js";
+        import CustProfile from "../static/views/CustProfile.js";
 
         const routes = [
             { path: '/', component: HomeView },
@@ -121,8 +123,9 @@
             { path: '/professional', component: ProfApp, meta: { requiresAuth: true, role: 'professional' }},
             { path: '/professional/search', component: ProfSearch, meta: { requiresAuth: true, role: 'professional' }},
             { path: '/professional/summary', component: ProfSummary, meta: { requiresAuth: true, role: 'professional' }},
-            { path: '/customer', component: CustomerApp },
-            { path: '/customer/search', component: CustSearch,  meta: { requiresAuth: true, role: 'customer' }}
+            { path: '/customer', component: CustomerApp, meta: { requiresAuth: true, role: 'customer' } },
+            { path: '/customer/search', component: CustSearch, meta: { requiresAuth: true, role: 'customer' }},
+            { path: '/customer/profile', component: CustProfile,  meta: { requiresAuth: true, role: 'customer' }}
         ];
         const router = new VueRouter({
             routes

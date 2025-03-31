@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, Blueprint, jsonify, url_for, 
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from datetime import timedelta, date, datetime
-from sqlalchemy import or_ #for multiple conditioning
+from sqlalchemy import or_, and_ #for multiple conditioning
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import func #for mathematical functions
 from werkzeug.utils import secure_filename
@@ -20,7 +20,7 @@ CORS(app)
 app.secret_key = 'Sanjana123'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///project.sqlite3'
 
-app.config['JWT_SECRET_KEY'] = 'IITM'
+app.config['JWT_SECRET_KEY'] = 'IITM123'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)  # 1-hour expiry
 
 jwt = JWTManager(app)
@@ -359,7 +359,7 @@ def delete_professional(id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-VALID_STATUSES = ['Requested', 'Accepted', 'In Progress', 'Completed', 'Cancelled']
+VALID_STATUSES = ['Requested', 'Accepted', 'In Progress', 'Closed', 'Cancelled']
 
 @admin_bp.route('/service-requests')
 def get_service_requests():
@@ -607,6 +607,7 @@ def professional_profile():
         db.session.commit()
         
         return jsonify({"message": "Profile updated"})
+    
 @prof_bp.route('/upload-profile-pic', methods=['POST'])
 @jwt_required()
 def upload_profile_pic():
@@ -654,123 +655,218 @@ def upload_profile_pic():
 
 # -------------------Blueprint for API calls and responses of Customers-----------------
 cust_bp = Blueprint('customer', __name__, url_prefix='/api/customer')
-@cust_bp.route('/search', methods=['GET'])
+
+VALID_STATUSES = ['Requested', 'Accepted', 'In Progress', 'Closed', 'Cancelled']
+
+@cust_bp.route('/<int:customer_id>/requests', methods=['GET'])
 @jwt_required()
-def search_services():
-    search_query = request.args.get('query', '').strip()
+def get_customer_requests(customer_id):
+    current_user = get_jwt_identity()
+    if current_user['id'] != customer_id or current_user['role'] != 'customer':
+        return jsonify({'error': 'Unauthorized'}), 403
     
-    # Base query with actual database data
-    query = db.session.query(
-        Service.id,
-        Service.name,
-        Service.price,
-        Service.description,
-        func.count(Professional.id).label('professionals_count')
-    ).outerjoin(
-        Professional, Professional.service_id == Service.id
-    ).filter(
-        Professional.status == 'Approved'
-    ).group_by(
-        Service.id
-    )
-    
-    # Apply name filter only
-    if search_query:
-        query = query.filter(Service.name.ilike(f'%{search_query}%'))
-    
-    # Execute query and format results
-    services = query.all()
-    
+    requests = ServiceRequest.query.filter_by(customer_id=customer_id).all()
     return jsonify([{
-        'id': s.id,
-        'name': s.name,
-        'price': float(s.price),
-        'description': s.description,
-        'professionals_count': s.professionals_count
-    } for s in services])
+        'id': r.id,
+        'service_name': r.service.name,
+        'professional_name': r.professional.name if r.professional else None,
+        'professional_contact': r.professional.phone_number if r.professional else None,
+        'request_date': r.request_date.isoformat(),
+        'status': r.status
+    } for r in requests])
 
-@cust_bp.route('/suggested', methods=['GET'])
+@cust_bp.route('/<int:customer_id>/requests', methods=['POST'])
 @jwt_required()
-def suggested_services():
-    # Mock suggested services data
-    suggested_services = [
-        {
-            'id': 1,
-            'name': 'Plumbing',
-            'price': 50.0,
-            'description': 'Professional plumbing services',
-            'avg_rating': 4.5,
-            'reviews': 42,
-            'professionals_count': 15
-        },
-        {
-            'id': 2,
-            'name': 'Electrical',
-            'price': 70.0,
-            'description': 'Certified electricians',
-            'avg_rating': 4.2,
-            'reviews': 35,
-            'professionals_count': 12
-        },
-        {
-            'id': 3,
-            'name': 'Cleaning',
-            'price': 30.0,
-            'description': 'Thorough cleaning services',
-            'avg_rating': 4.7,
-            'reviews': 58,
-            'professionals_count': 20
-        },
-        {
-            'id': 4,
-            'name': 'Gardening',
-            'price': 40.0,
-            'description': 'Landscaping and garden maintenance',
-            'avg_rating': 4.3,
-            'reviews': 27,
-            'professionals_count': 8
-        }
-    ]
-    
-    return jsonify(suggested_services)
+def create_service_request(customer_id):
+    current_user = get_jwt_identity()
+    if current_user['id'] != customer_id or current_user['role'] != 'customer':
+        return jsonify({'error': 'Unauthorized'}), 403
 
-@cust_bp.route('/service-requests', methods=['POST'])
-@jwt_required()
-def create_service_request():
-    customer_id = get_jwt_identity().get('id')
     data = request.get_json()
-    
-    # Validate input
-    if not data.get('service_id'):
-        return jsonify({'error': 'Service ID is required'}), 400
-    
-    if not data.get('requested_date'):
-        return jsonify({'error': 'Requested date is required'}), 400
-    
+    if not data or 'service_id' not in data:
+        return jsonify({'error': 'Missing service_id'}), 400
+
+    # Verify service exists
+    service = Service.query.get(data['service_id'])
+    if not service:
+        return jsonify({'error': 'Service not found'}), 404
+
     try:
-        # Create new service request
         new_request = ServiceRequest(
             customer_id=customer_id,
-            service_id=data['service_id'],
-            date_of_request=datetime.utcnow(),
-            requested_date=datetime.strptime(data['requested_date'], '%Y-%m-%d').date(),
-            remarks=data.get('remarks', ''),
-            status='Pending'
+            service_id=service.id,
+            request_date=datetime.utcnow(),
+            status='Requested'
         )
-        
         db.session.add(new_request)
         db.session.commit()
-        
+
+        # Return the complete request data
         return jsonify({
-            'message': 'Service request created successfully',
-            'request_id': new_request.id
+            'id': new_request.id,
+            'service_name': service.name,
+            'professional_name': None,
+            'professional_contact': None,
+            'request_date': new_request.request_date.isoformat(),
+            'status': new_request.status
         }), 201
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@cust_bp.route('/<int:customer_id>/requests/<int:request_id>/cancel', methods=['PUT'])
+@jwt_required()
+def cancel_service_request(customer_id, request_id):
+    current_user = get_jwt_identity()
+    if current_user['id'] != customer_id or current_user['role'] != 'customer':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    service_request = ServiceRequest.query.filter_by(
+        id=request_id,
+        customer_id=customer_id
+    ).first_or_404()
+    
+    if service_request.status not in ['Requested', 'Accepted']:
+        return jsonify({'error': 'Cannot cancel request in current status'}), 400
+    
+    service_request.status = 'Cancelled'
+    db.session.commit()
+    
+    return jsonify({'message': 'Service request cancelled successfully'})
 
+@cust_bp.route('/service-requests/<int:request_id>/rate', methods=['POST'])
+@jwt_required()
+def rate_service_request(request_id):
+    customer_id = get_jwt_identity().get('id')
+    service_request = ServiceRequest.query.filter_by(id=request_id, customer_id=customer_id).first_or_404()
+
+    if service_request.status != "Closed":
+        return jsonify({"message": "You can only rate completed services"}), 400
+
+    rating = request.json.get("rating")
+    if rating not in [1, 2, 3, 4, 5]:
+        return jsonify({"message": "Invalid rating. Must be between 1 and 5"}), 400
+
+    service_request.rating = rating
+    db.session.commit()
+
+    return jsonify({"message": "Rating submitted successfully"})
+
+@cust_bp.route('/search', methods=['GET'])
+def search_services():
+    query = request.args.get('query', '').strip().lower()
+    category = request.args.get('category', 'services')
+
+    if not query:
+        return jsonify({"error": "Search query cannot be empty"}), 400
+
+    if category != 'services':
+        return jsonify({"error": "Invalid search category"}), 400
+
+    results = []
+
+    try:
+        services = Service.query.filter(
+            or_(
+                Service.name.ilike(f'%{query}%')
+            )
+        ).all()
+
+        results = [{
+            'id': s.id,
+            'name': s.name,
+            'price': s.price
+        } for s in services]
+
+        return jsonify(results)
+
+    except Exception as e:
+        import traceback
+        print("ERROR in /search:", traceback.format_exc()) 
+        return jsonify({"error": str(e)}), 500
+
+@cust_bp.route('/<int:customer_id>', methods=['GET'])
+@jwt_required()
+def get_customer(customer_id):
+    # Verify the requesting user matches the customer_id
+    current_user = get_jwt_identity()
+    if current_user['id'] != customer_id or current_user['role'] != 'customer':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    customer = Customer.query.get_or_404(customer_id)
+    return jsonify({
+        'id': customer.id,
+        'name': customer.name,
+        'email': customer.email,
+        'phone_number': customer.phone_number,
+        'address': customer.address,
+        'pincode': customer.pincode
+    })
+
+@cust_bp.route('/<int:customer_id>', methods=['PUT'])
+@jwt_required()
+def update_customer(customer_id):
+    current_user = get_jwt_identity()
+    if current_user['id'] != customer_id or current_user['role'] != 'customer':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    customer = Customer.query.get_or_404(customer_id)
+    data = request.get_json()
+
+    # Validate required fields
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    # Update profile fields
+    if 'name' in data:
+        customer.name = data['name'].strip() if data['name'] else None
+
+    if 'email' in data:
+        customer.email = data['email'].strip() if data['email'] else None
+
+    if 'phone_number' in data:
+        customer.phone_number = data['phone_number'].strip() if data['phone_number'] else None
+
+    if 'address' in data:
+        customer.address = data['address'].strip() if data['address'] else None
+
+    if 'pincode' in data:
+        pincode = data['pincode'].strip() if data['pincode'] else None
+        if pincode and (not pincode.isdigit() or len(pincode) != 6):
+            return jsonify({'error': 'Pincode must be 6 digits'}), 400
+        customer.pincode = pincode
+
+    # Handle password change if provided
+    if 'current_password' in data or 'new_password' in data:
+        if not all(key in data for key in ['current_password', 'new_password']):
+            return jsonify({'error': 'Both current and new password are required for password change'}), 400
+
+        if not check_password_hash(customer.password, data['current_password']):
+            return jsonify({'error': 'Current password is incorrect'}), 400
+
+        if len(data['new_password']) < 6:
+            return jsonify({'error': 'New password must be at least 6 characters'}), 400
+
+        customer.password = generate_password_hash(data['new_password'])
+
+    try:
+        db.session.commit()
+        return jsonify({
+            'message': 'Profile updated successfully',
+            'customer': {
+                'id': customer.id,
+                'name': customer.name,
+                'email': customer.email,
+                'phone_number': customer.phone_number,
+                'address': customer.address,
+                'pincode': customer.pincode
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
 # -------------------Blueprint for authentication and authorization-----------------
 auth = Blueprint('auth', __name__)
 
@@ -926,7 +1022,6 @@ def customer_register():
         db.session.rollback()
         return jsonify({"error": "An error occurred during registration."}), 500
     
-
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(prof_bp)

@@ -182,7 +182,7 @@ const AdminSummary = Vue.component("AdminSummary", {
       }
     },
   
-    mounted() {
+    async mounted() {
         this.fetchSummaryData();
       }      
   });
